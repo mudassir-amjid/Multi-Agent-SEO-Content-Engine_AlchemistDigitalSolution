@@ -1,0 +1,529 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editorial AI | Content Intelligence Engine</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f5f9;
+            color: #202938;
+        }
+
+        header {
+            background: #172554;
+            color: white;
+            padding: 22px 7%;
+        }
+
+        header h1 { margin: 0 0 6px; font-size: 25px; }
+        header p { margin: 0; color: #cbd5e1; }
+
+        main {
+            max-width: 1150px;
+            margin: 30px auto;
+            padding: 0 18px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 22px;
+            align-items: start;
+        }
+
+        .card {
+            background: white;
+            padding: 23px;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px #0000000b;
+            margin-bottom: 20px;
+        }
+
+        h2 { margin-top: 0; font-size: 19px; }
+
+        label {
+            display: block;
+            font-weight: bold;
+            font-size: 13px;
+            margin: 15px 0 7px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #d6dce5;
+            border-radius: 7px;
+            font-size: 14px;
+        }
+
+        textarea { min-height: 75px; resize: vertical; }
+
+        button {
+            border: 0;
+            background: #2563eb;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 17px;
+        }
+
+        button:disabled { opacity: .6; cursor: wait; }
+
+        .full { width: 100%; }
+
+        .pipeline {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .stage {
+            background: #e8edf5;
+            padding: 12px 5px;
+            border-radius: 7px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .stage.active {
+            background: #dbeafe;
+            color: #1d4ed8;
+            font-weight: bold;
+        }
+
+        .stage.done {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .muted { color: #64748b; font-size: 13px; }
+        .hidden { display: none; }
+
+        .score {
+            font-size: 34px;
+            font-weight: bold;
+            color: #15803d;
+        }
+
+        .article {
+            line-height: 1.7;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .metadata {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 7px;
+            margin: 10px 0;
+            overflow-wrap: anywhere;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .actions button { margin-top: 5px; }
+
+        #message { margin-top: 12px; font-size: 13px; }
+
+        @media (max-width: 750px) {
+            .layout { grid-template-columns: 1fr; }
+            .pipeline { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Editorial AI</h1>
+    <p>Multi-Agent Editorial & SEO Content Intelligence Engine</p>
+</header>
+
+<main>
+    <div class="layout">
+
+        <section class="card">
+            <h2>Generate New Article</h2>
+
+            <form id="articleForm">
+
+                <label>Article Topic</label>
+                <input id="topic" required minlength="3"
+                    placeholder="e.g. Artificial Intelligence in Healthcare">
+
+                <label>Target SEO Keyword</label>
+                <input id="keyword" required minlength="2"
+                    placeholder="e.g. AI in Healthcare">
+
+                <label>Target Audience</label>
+                <input id="audience" value="General audience">
+
+                <label>Writing Tone</label>
+                <select id="tone">
+                    <option>Professional</option>
+                    <option>Conversational</option>
+                    <option>Informative</option>
+                    <option>Persuasive</option>
+                    <option>Friendly</option>
+                </select>
+
+                <label>Language</label>
+                <select id="language">
+                    <option>English</option>
+                    <option>Roman Urdu</option>
+                    <option>Bilingual</option>
+                </select>
+
+                <label>Reference URLs (optional, one per line)</label>
+                <textarea id="urls"
+                    placeholder="https://example.com/article"></textarea>
+
+                <button class="full" id="generateBtn" type="submit">
+                    Generate Article
+                </button>
+
+                <p id="message" class="muted"></p>
+            </form>
+        </section>
+
+        <section>
+            <div class="card">
+                <h2>AI Agent Pipeline</h2>
+
+                <div class="pipeline">
+                    <div class="stage" id="stage1">1. Research</div>
+                    <div class="stage" id="stage2">2. Outlining</div>
+                    <div class="stage" id="stage3">3. Writing</div>
+                    <div class="stage" id="stage4">4. Reviewing</div>
+                </div>
+
+                <p class="muted" id="pipelineMessage">
+                    Ready to generate your article.
+                </p>
+            </div>
+
+            <div id="results" class="hidden">
+
+                <div class="card">
+                    <h2>Editorial Quality Score</h2>
+                    <div class="score" id="score">--/100</div>
+                    <p id="approval"></p>
+                    <div id="feedback"></div>
+                </div>
+
+                <div class="card">
+                    <h2>SEO Metadata</h2>
+                    <div class="metadata">
+                        <strong>SEO Title</strong>
+                        <p id="metaTitle"></p>
+                    </div>
+                    <div class="metadata">
+                        <strong>Meta Description</strong>
+                        <p id="metaDescription"></p>
+                    </div>
+                    <p><strong>Search Intent:</strong> <span id="intent"></span></p>
+                    <p><strong>Related Keywords:</strong> <span id="keywords"></span></p>
+                </div>
+
+                <div class="card">
+                    <h2>Article Preview</h2>
+                    <p><strong id="articleTitle"></strong></p>
+                    <div class="article" id="articleContent"></div>
+                    <hr>
+                    <h3>Bilingual Summary</h3>
+                    <p id="summary"></p>
+
+                    <div class="actions">
+                        <button onclick="downloadFile('md')">Export Markdown</button>
+                        <button onclick="downloadFile('html')">Export HTML</button>
+                        <button onclick="downloadFile('json')">Export JSON</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Saved Article</h2>
+                    <p id="savedId" class="muted"></p>
+                    <label>Update Article Status</label>
+                    <select id="status">
+                        <option value="draft">Draft</option>
+                        <option value="approved">Approved</option>
+                        <option value="published">Published</option>
+                    </select>
+                    <button onclick="updateStatus()">Update Status</button>
+                    <p id="statusMessage" class="muted"></p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Previous Articles</h2>
+                <button onclick="loadArticles()">Refresh Articles</button>
+                <div id="articleList" class="muted">
+                    No articles loaded yet.
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+    let currentResult = null;
+    let currentArticleId = null;
+
+    function setStage(active) {
+        for (let i = 1; i <= 4; i++) {
+            const element = document.getElementById("stage" + i);
+            element.className = "stage";
+
+            if (i < active) element.classList.add("done");
+            if (i === active) element.classList.add("active");
+        }
+    }
+
+    document.getElementById("articleForm").addEventListener("submit",
+        async function(event) {
+            event.preventDefault();
+
+            const button = document.getElementById("generateBtn");
+            const message = document.getElementById("message");
+
+            button.disabled = true;
+            button.textContent = "Generating...";
+            document.getElementById("results").classList.add("hidden");
+            message.textContent = "Please wait. AI agents are working...";
+
+            try {
+                const requestData = {
+                    topic: document.getElementById("topic").value,
+                    target_keyword: document.getElementById("keyword").value,
+                    audience: document.getElementById("audience").value,
+                    tone: document.getElementById("tone").value,
+                    language: document.getElementById("language").value,
+                    reference_urls: document.getElementById("urls").value
+                        .split("\n").map(x => x.trim()).filter(Boolean)
+                };
+
+                setStage(1);
+                document.getElementById("pipelineMessage").textContent =
+                    "Researching topic and search intent...";
+
+                const response = await fetch("/api/generate", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify(requestData)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || "Generation failed");
+                }
+
+                setStage(4);
+                document.getElementById("pipelineMessage").textContent =
+                    "All agents completed their work.";
+
+                currentResult = data.pipeline_result;
+                currentArticleId = data.article.id;
+
+                displayResults(currentResult, data.article);
+
+                message.textContent = "Article generated and saved successfully.";
+                await loadArticles();
+
+            } catch (error) {
+                message.textContent = "Error: " + error.message;
+                document.getElementById("pipelineMessage").textContent =
+                    "Pipeline failed. Check the server terminal for details.";
+            } finally {
+                button.disabled = false;
+                button.textContent = "Generate Article";
+            }
+        }
+    );
+
+    function displayResults(result, savedArticle) {
+        document.getElementById("results").classList.remove("hidden");
+
+        document.getElementById("score").textContent =
+            result.quality_score + "/100";
+
+        document.getElementById("approval").textContent =
+            result.approved ? "Quality threshold achieved." :
+            "Article remains a draft: quality score below 80.";
+
+        const feedback = result.critic_feedback;
+        document.getElementById("feedback").innerHTML =
+            "<strong>Strengths</strong><ul>" +
+            feedback.strengths.map(x => "<li>" + escapeHTML(x) + "</li>").join("") +
+            "</ul><strong>Improvements</strong><ul>" +
+            feedback.improvement_suggestions.map(x =>
+                "<li>" + escapeHTML(x) + "</li>").join("") + "</ul>";
+
+        document.getElementById("metaTitle").textContent =
+            result.outline.meta_title;
+        document.getElementById("metaDescription").textContent =
+            result.outline.meta_description;
+        document.getElementById("intent").textContent =
+            result.research.search_intent;
+        document.getElementById("keywords").textContent =
+            result.research.related_keywords.join(", ");
+
+        document.getElementById("articleTitle").textContent =
+            result.article.title;
+        document.getElementById("articleContent").textContent =
+            result.article.content_markdown;
+        document.getElementById("summary").textContent =
+            result.article.bilingual_summary;
+
+        currentArticleId = savedArticle.id;
+        document.getElementById("savedId").textContent =
+            "Article ID: " + currentArticleId;
+        document.getElementById("status").value = savedArticle.status;
+    }
+
+    function escapeHTML(value) {
+        return String(value).replace(/[&<>"']/g, char => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;",
+            '"': "&quot;", "'": "&#039;"
+        })[char]);
+    }
+
+    function downloadFile(format) {
+        if (!currentResult) return;
+
+        const article = currentResult.article;
+        let content = article.content_markdown;
+        let filename = "article";
+
+        if (format === "html") {
+            content = "<!DOCTYPE html><html><head><meta charset='UTF-8'>" +
+                "<title>" + escapeHTML(article.title) +
+                "</title></head><body><pre>" +
+                escapeHTML(content) + "</pre></body></html>";
+            filename += ".html";
+        } else if (format === "json") {
+            content = JSON.stringify(currentResult, null, 2);
+            filename += ".json";
+        } else {
+            filename += ".md";
+        }
+
+        const blob = new Blob([content], {type: "text/plain"});
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async function updateStatus() {
+        if (!currentArticleId) return;
+
+        const status = document.getElementById("status").value;
+
+        try {
+            const response = await fetch(
+                "/api/articles/" + currentArticleId + "/status",
+                {
+                    method: "PATCH",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({status: status})
+                }
+            );
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail);
+
+            document.getElementById("statusMessage").textContent =
+                "Status updated to " + status + ".";
+            await loadArticles();
+
+        } catch (error) {
+            document.getElementById("statusMessage").textContent =
+                "Error: " + error.message;
+        }
+    }
+
+    async function loadArticles() {
+        const container = document.getElementById("articleList");
+
+        try {
+            const response = await fetch("/api/articles");
+            if (!response.ok) throw new Error("Could not load articles.");
+
+            const articles = await response.json();
+
+            if (articles.length === 0) {
+                container.textContent = "No saved articles yet.";
+                return;
+            }
+
+            container.innerHTML = articles.map(article =>
+                "<div class='metadata'>" +
+                "<strong>" + escapeHTML(article.topic) + "</strong>" +
+                "<p>Score: " + article.quality_score +
+                " | Status: " + escapeHTML(article.status) + "</p>" +
+                "<button onclick=\"openArticle('" + article.id + "')\">" +
+                "View Article</button></div>"
+            ).join("");
+
+        } catch (error) {
+            container.textContent = error.message;
+        }
+    }
+
+    async function openArticle(id) {
+        try {
+            const response = await fetch("/api/articles/" + id);
+            if (!response.ok) throw new Error("Article not found.");
+
+            const article = await response.json();
+
+            currentArticleId = article.id;
+            document.getElementById("results").classList.remove("hidden");
+            document.getElementById("score").textContent =
+                article.quality_score + "/100";
+            document.getElementById("articleTitle").textContent =
+                article.topic;
+            document.getElementById("articleContent").textContent =
+                article.content_markdown;
+            document.getElementById("summary").textContent =
+                article.bilingual_summary;
+            document.getElementById("metaTitle").textContent =
+                article.meta_title;
+            document.getElementById("metaDescription").textContent =
+                article.meta_description;
+            document.getElementById("savedId").textContent =
+                "Article ID: " + article.id;
+            document.getElementById("status").value = article.status;
+
+            currentResult = null;
+            document.getElementById("statusMessage").textContent =
+                "Previously saved article loaded.";
+
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    loadArticles();
+</script>
+
+</body>
+</html>
